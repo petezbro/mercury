@@ -11,7 +11,6 @@ export async function* streamOnce(
     body: JSON.stringify({
       model: 'gpt-5',
       stream: true,
-      temperature: 0.9,
       max_completion_tokens: 800,
       messages,
     }),
