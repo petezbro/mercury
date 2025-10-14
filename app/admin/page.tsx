@@ -1,0 +1,1 @@
+export default function Admin(){return(<main className='min-h-screen px-6 py-16 max-w-3xl mx-auto'><h1 className='text-4xl font-display mb-6'>Admin</h1><p className='opacity-80'>Grant or revoke complimentary access (comp). This is a placeholder UI; wire to Supabase RPC.</p></main>)}

@@ -1,0 +1,29 @@
+{
+  "name": "mercury-fyi",
+  "version": "1.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "^5.5.4",
+    "@supabase/supabase-js": "^2.45.4",
+    "stripe": "^16.6.0",
+    "@stripe/stripe-js": "^2.6.0",
+    "zod": "^3.23.8",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.10",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.4"
+  }
+}
