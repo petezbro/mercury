@@ -15,7 +15,7 @@
     "typescript": "^5.5.4",
     "@supabase/supabase-js": "^2.45.4",
     "stripe": "^16.6.0",
-    "@stripe/stripe-js": "^2.6.0",
+    "@stripe/stripe-js": "^3.0.0",
     "zod": "^3.23.8",
     "clsx": "^2.1.1"
   },
