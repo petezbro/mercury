@@ -18,7 +18,10 @@ export async function* streamOnce(
     signal,
   });
 
-  if (!res.ok || !res.body) throw new Error('OpenAI request failed');
+if (!res.ok || !res.body) {
+  const txt = await res.text().catch(() => '');
+  throw new Error(`OpenAI ${res.status}: ${txt || 'request failed'}`);
+}
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
