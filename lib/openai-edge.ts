@@ -12,7 +12,7 @@ export async function* streamOnce(
       model: 'gpt-5',
       stream: true,
       temperature: 0.9,
-      max_tokens: 800,
+      max_completion_tokens: 800,
       messages,
     }),
     signal,
