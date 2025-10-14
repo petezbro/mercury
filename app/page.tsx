@@ -1,41 +1,29 @@
-'use client';
+import Link from 'next/link';
 
-import { useEffect, useRef, useState } from 'react';
-
-type Msg = { role: 'user' | 'mercury'; content: string };
-
-export default function Chat() {
-  const [messages, setMessages] = useState<Msg[]>([
-    { role: 'mercury', content: 'Ah, a living thought enters. What’s alive in you?' } as const
-  ]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    listRef.current?.scrollTo(0, listRef.current.scrollHeight);
-  }, [messages]);
-
-  async function send() {
-    if (!input.trim()) return;
-
-    const next: Msg[] = [
-      ...messages,
-      { role: 'user' as const, content: input.trim() }
-    ];
-
-    setMessages(next);
-    setInput('');
-    setBusy(true);
-
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ messages: next })
-    });
-
-    const reader = res.body?.getReader();
-    const decoder = new TextDecoder();
-    let acc = '';
-    let appended = false;
-
-    while (reader
+export default function Home() {
+  return (
+    <main className="min-h-[80vh] grid place-items-center px-6">
+      <div className="text-center max-w-2xl">
+        <h1 className="font-display text-6xl tracking-tight">Mercury</h1>
+        <p className="mt-2 text-xl opacity-90 italic">For your insight.</p>
+        <div className="mt-10 space-x-3">
+          <Link
+            href="/chat"
+            className="inline-block rounded-md bg-white/10 px-6 py-3 hover:bg-white/20 transition"
+          >
+            Start your session
+          </Link>
+          <Link
+            href="/account"
+            className="inline-block rounded-md border border-white/20 px-6 py-3 hover:bg-white/10 transition"
+          >
+            Account
+          </Link>
+        </div>
+        <p className="mt-12 text-sm opacity-70">
+          $19/month • one session per day • support@mercury.fyi
+        </p>
+      </div>
+    </main>
+  );
+}
