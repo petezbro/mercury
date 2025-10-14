@@ -34,11 +34,18 @@ export async function POST(req: Request) {
         for await (const chunk of streamOpenAIWithRetry(all, 8000, 1)) {
           controller.enqueue(enc.encode(chunk));
         }
-      } catch (e) {
-        controller.enqueue(enc.encode('Something went wrong. Try again.'));
-      } finally {
-        controller.close();
-      }
+} catch (e: any) {
+  const enc = new TextEncoder();
+  const msg = e?.message || 'Unknown error';
+  controller.enqueue(
+    enc.encode(process.env.DEBUG_ERRORS === 'true'
+      ? `[debug] ${msg}`
+      : 'Something went wrong. Try again.'
+    )
+  );
+} finally {
+  controller.close();
+}
     }
   });
   return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
