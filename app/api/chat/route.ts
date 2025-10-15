@@ -28,6 +28,12 @@ export async function POST(req: Request) {
     const essence = typeof body?.essence === 'string' ? body.essence : '';
 
     const lastUser = [...transcript].reverse().find((m:any)=>m.role==='user');
+    if (lastUser && lastUser.content.length > CONFIG.MAX_USER_CHARS) {
+      return new Response(
+        `Your message is longer than this session allows. Please trim it a little and resend.`,
+        { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      );
+    }
     if (lastUser) {
       const parsed = extractToneChips(lastUser.content);
       if (parsed.length) {
@@ -40,7 +46,6 @@ export async function POST(req: Request) {
 
     const messages = buildMessages({ transcript, tones, essence });
     const text = await completeOnce(messages);
-
     const marker = tones.length ? ` [tones:${tones.join(', ')}]` : '';
     return new Response(text + marker, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   } catch (e:any) {

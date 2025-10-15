@@ -1,13 +1,16 @@
-# Mercury v2.0.0 — Conversation Recalibrator
+# Mercury v2.1.0 — Exploratory Recalibrator
 
+- Exploratory, multi-turn dialogue (pre + ask + optional hint)
+- Thinking animation (no streaming) so the UI feels alive
+- Live char/token counters and input limit
+- Edge runtime API (`/api/chat`), non-streaming with retry and guards
 - Single-source config in `lib/config.ts`
-- Non-streaming completions with one retry and 12s timeout
-- Chat-only tone selection; multi-tone blending via freeform words
-- Emotion pre-hint & recalibration driven by system prompt
-- Uses `max_completion_tokens` (modern param)
-- Edge runtime API at `/api/chat`
 
 ## Deploy
-1. Set `OPENAI_API_KEY` in Vercel (Production).
-2. Import repo or upload zip → Deploy.
-3. Visit `/chat`.
+1) Set `OPENAI_API_KEY` in Vercel → Project → Settings → Environment Variables.
+2) Push to GitHub or upload this zip; Vercel will deploy.
+3) Visit `/chat`.
+
+## Notes
+- Toggle `DEBUG` in `lib/config.ts` to surface detailed error messages.
+- Adjust token caps / char limits in `lib/config.ts` to control cost and UX.

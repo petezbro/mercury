@@ -2,6 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: true }
+  eslint: { ignoreDuringBuilds: true },
 };
 module.exports = nextConfig;
