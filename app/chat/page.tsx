@@ -5,65 +5,41 @@ type Msg = { role: 'user' | 'mercury'; content: string };
 
 export default function Chat() {
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'mercury', content: 'Ah, a living thought enters. What’s alive in you?' } as const,
+    { role: 'mercury', content: 'Speak what you’re trying to say — to anyone, about anything.' } as const,
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [tones, setTones] = useState<string[]>([]);
+  const [essence, setEssence] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     listRef.current?.scrollTo(0, listRef.current.scrollHeight);
   }, [messages]);
 
-  async function send() {
-    if (!input.trim()) return;
-
-    const next: Msg[] = [
-      ...messages,
-      { role: 'user' as const, content: input.trim() },
-    ];
+  async function send(text?: string) {
+    const content = (text ?? input).trim();
+    if (!content) return;
+    const next: Msg[] = [...messages, { role: 'user', content }];
     setMessages(next);
     setInput('');
     setBusy(true);
 
     const res = await fetch('/api/chat', {
       method: 'POST',
-      body: JSON.stringify({ messages: next }),
+      body: JSON.stringify({ transcript: next, tones, essence })
     });
 
-    const reader = res.body?.getReader();
-    const decoder = new TextDecoder();
-    let acc = '';
-    let appended = false;
-
-    while (reader) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      acc += decoder.decode(value, { stream: true });
-
-      if (!appended) {
-        setMessages((m) => [...m, { role: 'mercury' as const, content: '' }]);
-        appended = true;
-      }
-
-      setMessages((m) => {
-        const copy = [...m];
-        copy[copy.length - 1] = { role: 'mercury', content: acc };
-        return copy;
-      });
-    }
-
-    setBusy(false);
-  }
-
-  async function requestRemedy(kind: string) {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ remedy: kind, messages }),
-    });
     const txt = await res.text();
-    setMessages((m) => [...m, { role: 'mercury' as const, content: txt }]);
+    const toneMatch = txt.match(/\[tones:(.*?)\]/);
+    if (toneMatch) {
+      const list = toneMatch[1].split(',').map(s=>s.trim()).filter(Boolean);
+      setTones(list);
+    }
+    const clean = toneMatch ? txt.replace(toneMatch[0],'').trim() : txt;
+
+    setMessages(m => [...m, { role: 'mercury', content: clean }]);
+    setBusy(false);
   }
 
   return (
@@ -76,16 +52,24 @@ export default function Chat() {
           {messages.map((m, i) => (
             <div key={i} className={m.role === 'mercury' ? 'mb-6' : 'mb-6 text-right'}>
               <div
-                className={
-                  m.role === 'mercury'
-                    ? 'inline-block bg-white/10 px-4 py-2 rounded-lg'
-                    : 'inline-block bg-white/5 px-4 py-2 rounded-lg'
-                }
+                className={m.role === 'mercury'
+                  ? 'inline-block bg-white/10 px-4 py-2 rounded-lg'
+                  : 'inline-block bg-white/5 px-4 py-2 rounded-lg'}
               >
                 {m.content}
               </div>
             </div>
           ))}
+
+          {tones.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {tones.map((t, idx) => (
+                <span key={idx} className="text-xs rounded-full border border-white/20 px-3 py-1 opacity-90">
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -93,31 +77,16 @@ export default function Chat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
-            placeholder="Speak, and be seen…"
+            placeholder="Tell me what you’re trying to say… (you can add tones like: calm, clear, warm)"
             className="flex-1 rounded-md bg-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-white/30"
           />
           <button
             disabled={busy}
-            onClick={send}
+            onClick={() => send()}
             className="rounded-md bg-white/10 px-6 py-3 hover:bg-white/20 transition disabled:opacity-50"
           >
             Send
           </button>
-        </div>
-
-        <div className="mt-6">
-          <div className="text-sm opacity-80">When you’re ready, choose an embodiment:</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {['Drink', 'Eat', 'Breath', 'Gesture'].map((k) => (
-              <button
-                key={k}
-                onClick={() => requestRemedy(k)}
-                className="rounded-full border border-white/20 px-4 py-1.5 text-sm hover:bg-white/10"
-              >
-                {k}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </main>

@@ -1,52 +1,49 @@
-
 export const runtime = 'edge';
-import { streamOpenAIWithRetry } from '@/lib/openai-edge';
+
+import { CONFIG } from '@/lib/config';
+import { buildMessages, completeOnce, debugMessage } from '@/lib/openai';
+
+function extractToneChips(text: string) {
+  const lowered = text.toLowerCase();
+  const directTag = lowered.match(/tone[s]?\s*[:=]\s*([^\n]+)/);
+  const plusList = lowered.includes('+') ? lowered.split('+') : null;
+  let tokens: string[] = [];
+
+  if (directTag) {
+    tokens = directTag[1].split(/[,&]/).map(s=>s.trim());
+  } else if (plusList && plusList.length > 1) {
+    tokens = plusList.map(s=>s.trim());
+  }
+  tokens = tokens.map(t => t.replace(/[^a-z\-\s]/g,'')).filter(Boolean);
+  const uniq: string[] = [];
+  for (const t of tokens) if (!uniq.includes(t)) uniq.push(t);
+  return uniq.slice(0,3);
+}
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(()=>({}));
-  const { messages, remedy } = body || {};
+  try {
+    const body = await req.json();
+    const transcript = Array.isArray(body?.transcript) ? body.transcript : [];
+    let tones = Array.isArray(body?.tones) ? body.tones : [];
+    const essence = typeof body?.essence === 'string' ? body.essence : '';
 
-  const system = { role: 'system', content: `You are Mercury, messenger and mirror. (Full behavioral prompt stored server-side.)` };
-
-  if (remedy) {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-5',
-        temperature: 0.9,
-        max_tokens: 180,
-        messages: [ system, { role: 'user', content: `Remedy requested: ${remedy}. Generate a short, safe, vivid instruction.` } ]
-      })
-    });
-    if (!r.ok) return new Response('Something went wrong. Try again.', { status: 500 });
-    const j = await r.json();
-    const t = j.choices?.[0]?.message?.content ?? 'Here is something simple: a glass of warm water. Sip slowly and breathe.';
-    return new Response(t);
-  }
-
-  const all = [system, ...((messages||[]).map((m:any)=> ({ role: m.role==='mercury' ? 'assistant' : 'user', content: m.content })))];
-  const stream = new ReadableStream({
-    async start(controller) {
-      const enc = new TextEncoder();
-      try {
-        // Retry once if first chunk takes longer than 8s
-        for await (const chunk of streamOpenAIWithRetry(all, 8000, 1)) {
-          controller.enqueue(enc.encode(chunk));
-        }
-} catch (e: any) {
-  const enc = new TextEncoder();
-  const msg = e?.message || 'Unknown error';
-  controller.enqueue(
-    enc.encode(process.env.DEBUG_ERRORS === 'true'
-      ? `[debug] ${msg}`
-      : 'Something went wrong. Try again.'
-    )
-  );
-} finally {
-  controller.close();
-}
+    const lastUser = [...transcript].reverse().find((m:any)=>m.role==='user');
+    if (lastUser) {
+      const parsed = extractToneChips(lastUser.content);
+      if (parsed.length) {
+        const merged = [...tones, ...parsed].map(s=>s.trim().toLowerCase());
+        const uniq: string[] = [];
+        for (const t of merged) if (!uniq.includes(t)) uniq.push(t);
+        tones = uniq.slice(0,3);
+      }
     }
-  });
-  return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+
+    const messages = buildMessages({ transcript, tones, essence });
+    const text = await completeOnce(messages);
+
+    const marker = tones.length ? ` [tones:${tones.join(', ')}]` : '';
+    return new Response(text + marker, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  } catch (e:any) {
+    return new Response(debugMessage(e), { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
 }

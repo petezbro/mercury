@@ -1,6 +1,13 @@
-# Mercury — For your insight.
-Domain: https://mercury.fyi
-Support: support@mercury.fyi
-Price: $19/month • one session per day • 3 free sessions (1 guest + 2 logged-in)
+# Mercury v2.0.0 — Conversation Recalibrator
 
-Edge chat enabled with first-chunk auto-retry. See CHANGELOG.md.
+- Single-source config in `lib/config.ts`
+- Non-streaming completions with one retry and 12s timeout
+- Chat-only tone selection; multi-tone blending via freeform words
+- Emotion pre-hint & recalibration driven by system prompt
+- Uses `max_completion_tokens` (modern param)
+- Edge runtime API at `/api/chat`
+
+## Deploy
+1. Set `OPENAI_API_KEY` in Vercel (Production).
+2. Import repo or upload zip → Deploy.
+3. Visit `/chat`.

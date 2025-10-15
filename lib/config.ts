@@ -1,0 +1,8 @@
+export const CONFIG = {
+  MODEL: 'gpt-5',
+  NON_STREAMING: true,
+  HTTP_TIMEOUT_MS: 12000,
+  FIRST_RETRY_DELAY_MS: 200,
+  MAX_COMPLETION_TOKENS: 600,
+  DEBUG: false
+} as const;

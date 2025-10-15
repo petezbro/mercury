@@ -1,0 +1,68 @@
+import { CONFIG } from './config';
+import { SYSTEM_PROMPT } from './prompt';
+
+export function buildMessages(payload: any) {
+  const { transcript = [], tones = [], essence = '' } = payload || {};
+  const toneLine = tones.length ? `Chosen tones: ${tones.join(', ')}` : `Chosen tones: (none yet)`;
+  const essenceLine = essence ? `Session Essence: ${essence}` : '';
+  const sys = { role: 'system', content: SYSTEM_PROMPT + '\n' + essenceLine + '\n' + toneLine };
+
+  const msgs = [sys, ...transcript.map((m: any) => ({
+    role: m.role === 'mercury' ? 'assistant' as const : 'user' as const,
+    content: m.content
+  }))];
+
+  return msgs;
+}
+
+async function postChat(messages: any[], signal?: AbortSignal) {
+  const body = JSON.stringify({
+    model: CONFIG.MODEL,
+    messages,
+    max_completion_tokens: CONFIG.MAX_COMPLETION_TOKENS
+  });
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body,
+    signal
+  });
+
+  return res;
+}
+
+export async function completeOnce(messages: any[], attempt = 0) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), CONFIG.HTTP_TIMEOUT_MS);
+  try {
+    const res = await postChat(messages, ctrl.signal);
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>''); 
+      const err = new Error(`OpenAI ${res.status}: ${txt || 'request failed'}`);
+      (err as any).code = `E${res.status}`;
+      throw err;
+    }
+    const json = await res.json();
+    const content = json.choices?.[0]?.message?.content ?? '';
+    return content;
+  } catch (e:any) {
+    if (attempt === 0) {
+      await new Promise(r => setTimeout(r, CONFIG.FIRST_RETRY_DELAY_MS));
+      return completeOnce(messages, 1);
+    }
+    throw e;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+export function debugMessage(e:any) {
+  if (!CONFIG.DEBUG) return 'Something went wrong. Try again.';
+  const msg = e?.message || 'unknown error';
+  const code = e?.code || 'E499-ABORT';
+  return `[debug] ${code}: ${msg}`;
+}
